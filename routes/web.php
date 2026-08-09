@@ -4,21 +4,35 @@ use App\Http\Controllers\BookController;
 use Illuminate\Support\Facades\Route;
 
 // 書籍一覧
-Route::get('/', [BookController::class, 'index'])
-    ->name('books.index');
+Route::get(
+    '/',
+    [BookController::class, 'index']
+)->name('books.index');
 
-// 認証が必要な機能
+// 認証必須
 Route::middleware('auth')->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | 書籍登録
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/books/create',
+        [BookController::class, 'create']
+    )->name('books.create');
+
+    Route::post(
+        '/books',
+        [BookController::class, 'store']
+    )->name('books.store');
 
     /*
     |--------------------------------------------------------------------------
     | 今後実装する書籍機能
     |--------------------------------------------------------------------------
     */
-
-    Route::get('/books/create', function () {
-        abort(501, '書籍登録機能は未実装です。');
-    })->name('books.create');
 
     Route::get('/books/{book}/edit', function () {
         abort(501, '書籍編集機能は未実装です。');
