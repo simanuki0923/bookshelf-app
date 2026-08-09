@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreBookRequest;
+use App\Http\Requests\UpdateBookRequest;
 use App\Models\Book;
 use App\Models\Genre;
 use Illuminate\Http\RedirectResponse;
@@ -33,7 +34,6 @@ class BookController extends Controller
     {
         $book->load([
             'genres',
-
             'reviews' => function ($query) {
                 $query
                     ->with([
@@ -59,7 +59,6 @@ class BookController extends Controller
      */
     public function create(): View
     {
-        // 登録フォームに表示するジャンル
         $genres = Genre::query()
             ->orderBy('name')
             ->get();
@@ -78,12 +77,10 @@ class BookController extends Controller
     ): RedirectResponse {
         $validated = $request->validated();
 
-        // ジャンルIDはbooksテーブルへ保存しない
         $genreIds = $validated['genres'];
 
         unset($validated['genres']);
 
-        // 書籍とジャンルをまとめて登録
         $book = DB::transaction(function () use (
             $request,
             $validated,
@@ -103,6 +100,64 @@ class BookController extends Controller
             ->with(
                 'success',
                 '書籍を登録しました。'
+            );
+    }
+
+    /**
+     * 書籍編集画面
+     */
+    public function edit(Book $book): View
+    {
+        // 登録者本人か確認
+        $this->authorize('update', $book);
+
+        // 現在設定されているジャンルを取得
+        $book->load('genres');
+
+        // 編集画面の選択肢
+        $genres = Genre::query()
+            ->orderBy('name')
+            ->get();
+
+        return view(
+            'books.edit',
+            compact('book', 'genres')
+        );
+    }
+
+    /**
+     * 書籍更新
+     */
+    public function update(
+        UpdateBookRequest $request,
+        Book $book
+    ): RedirectResponse {
+        // 登録者本人か確認
+        $this->authorize('update', $book);
+
+        $validated = $request->validated();
+
+        // genresはbooksテーブルへ保存しない
+        $genreIds = $validated['genres'];
+
+        unset($validated['genres']);
+
+        // 書籍情報とジャンルをまとめて更新
+        DB::transaction(function () use (
+            $book,
+            $validated,
+            $genreIds
+        ) {
+            $book->update($validated);
+
+            $book->genres()->sync($genreIds);
+        });
+
+        return redirect()
+            ->route('books.show', $book)
+            ->with(
+                'success',
+                '書籍情報を更新しました。'
             );
     }
 }
