@@ -2,39 +2,35 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreBookRequest;
 use App\Models\Book;
+use App\Models\Genre;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class BookController extends Controller
 {
     /**
-     * 書籍一覧を表示
+     * 書籍一覧
      */
     public function index(): View
     {
         $books = Book::query()
-            // ジャンルをまとめて取得
             ->with('genres')
-
-            // レビューの平均評価を取得
             ->withAvg('reviews', 'rating')
-
-            // 新しく登録された書籍から表示
             ->latest('created_at')
-
-            // 1ページ10件
             ->paginate(10);
 
         return view('books.index', compact('books'));
     }
 
     /**
-     * 書籍詳細を表示
+     * 書籍詳細
      */
     public function show(Book $book): View
     {
-        // 詳細画面で使用する関連データをまとめて取得
         $book->load([
             'genres',
 
@@ -48,7 +44,6 @@ class BookController extends Controller
             },
         ]);
 
-        // ログイン中はお気に入り・いいね済み判定用データを取得
         if (Auth::check()) {
             Auth::user()->loadMissing([
                 'favoriteBooks',
@@ -57,5 +52,57 @@ class BookController extends Controller
         }
 
         return view('books.show', compact('book'));
+    }
+
+    /**
+     * 書籍登録画面
+     */
+    public function create(): View
+    {
+        // 登録フォームに表示するジャンル
+        $genres = Genre::query()
+            ->orderBy('name')
+            ->get();
+
+        return view(
+            'books.create',
+            compact('genres')
+        );
+    }
+
+    /**
+     * 書籍登録
+     */
+    public function store(
+        StoreBookRequest $request
+    ): RedirectResponse {
+        $validated = $request->validated();
+
+        // ジャンルIDはbooksテーブルへ保存しない
+        $genreIds = $validated['genres'];
+
+        unset($validated['genres']);
+
+        // 書籍とジャンルをまとめて登録
+        $book = DB::transaction(function () use (
+            $request,
+            $validated,
+            $genreIds
+        ) {
+            $book = $request->user()
+                ->books()
+                ->create($validated);
+
+            $book->genres()->sync($genreIds);
+
+            return $book;
+        });
+
+        return redirect()
+            ->route('books.show', $book)
+            ->with(
+                'success',
+                '書籍を登録しました。'
+            );
     }
 }
