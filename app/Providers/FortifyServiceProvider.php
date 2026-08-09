@@ -11,38 +11,67 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
-use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
+use Laravel\Fortify\Contracts\LogoutResponse as LogoutResponseContract;
 use Laravel\Fortify\Fortify;
 
 class FortifyServiceProvider extends ServiceProvider
 {
     /**
-     * Register any application services.
+     * サービス登録
      */
     public function register(): void
     {
-        //
+        // ログアウト後はログイン画面へ遷移
+        $this->app->instance(
+            LogoutResponseContract::class,
+            new class implements LogoutResponseContract
+            {
+                public function toResponse($request)
+                {
+                    return redirect('/login');
+                }
+            }
+        );
     }
 
     /**
-     * Bootstrap any application services.
+     * Fortify設定
      */
     public function boot(): void
     {
+        // Fortifyの各処理を登録
         Fortify::createUsersUsing(CreateNewUser::class);
-        Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
-        Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
-        Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        Fortify::redirectUserForTwoFactorAuthenticationUsing(RedirectIfTwoFactorAuthenticatable::class);
+        Fortify::updateUserProfileInformationUsing(
+            UpdateUserProfileInformation::class
+        );
+        Fortify::updateUserPasswordsUsing(
+            UpdateUserPassword::class
+        );
+        Fortify::resetUserPasswordsUsing(
+            ResetUserPassword::class
+        );
 
-        RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
-
-            return Limit::perMinute(5)->by($throttleKey);
+        // 既存ログイン画面を使用
+        Fortify::loginView(function () {
+            return view('auth.login');
         });
 
-        RateLimiter::for('two-factor', function (Request $request) {
-            return Limit::perMinute(5)->by($request->session()->get('login.id'));
+        // 既存会員登録画面を使用
+        Fortify::registerView(function () {
+            return view('auth.register');
+        });
+
+        // ログイン試行回数を制限
+        RateLimiter::for('login', function (Request $request) {
+            $email = (string) $request->input(
+                Fortify::username()
+            );
+
+            return Limit::perMinute(5)->by(
+                Str::transliterate(
+                    Str::lower($email).'|'.$request->ip()
+                )
+            );
         });
     }
 }
