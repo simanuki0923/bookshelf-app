@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\GenreController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ReviewLikeController;
 use Illuminate\Support\Facades\Route;
@@ -107,9 +108,38 @@ Route::middleware('auth')->group(function () {
         [FavoriteController::class, 'toggle']
     )->name('favorites.toggle');
 
-    Route::get('/genres', function () {
-        abort(501, 'ジャンル管理機能は未実装です。');
-    })->name('genres.index');
+    /*
+|--------------------------------------------------------------------------
+| ジャンル
+|--------------------------------------------------------------------------
+*/
+
+    // ジャンル一覧：今回実装
+    Route::get(
+        '/genres',
+        [GenreController::class, 'index']
+    )->name('genres.index');
+
+    // ジャンル登録：後で実装
+    Route::get('/genres/create', function () {
+        abort(501, 'ジャンル登録機能は未実装です。');
+    })->name('genres.create');
+
+    // ジャンル編集：後で実装
+    Route::get('/genres/{genre}/edit', function () {
+        abort(501, 'ジャンル編集機能は未実装です。');
+    })->name('genres.edit');
+
+    // ジャンル削除：後で実装
+    Route::delete('/genres/{genre}', function () {
+        abort(501, 'ジャンル削除機能は未実装です。');
+    })->name('genres.destroy');
+
+    // ジャンル詳細：このfeature/genres-readで次に実装
+    Route::get('/genres/{genre}', function () {
+        abort(501, 'ジャンル詳細機能は未実装です。');
+    })->name('genres.show');
+
 });
 
 // ランキング
