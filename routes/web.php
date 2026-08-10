@@ -3,6 +3,7 @@
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\ReviewLikeController;
 use Illuminate\Support\Facades\Route;
 
 // 書籍一覧
@@ -85,6 +86,12 @@ Route::middleware('auth')->group(function () {
         [ReviewController::class, 'destroy']
     )->name('reviews.destroy');
 
+    // いいね登録・解除
+    Route::post(
+        '/reviews/{review}/like',
+        [ReviewLikeController::class, 'toggle']
+    )->name('reviews.like');
+
     /*
     |--------------------------------------------------------------------------
     | お気に入り
@@ -99,10 +106,6 @@ Route::middleware('auth')->group(function () {
         '/books/{book}/favorites',
         [FavoriteController::class, 'toggle']
     )->name('favorites.toggle');
-
-    Route::post('/reviews/{review}/like', function () {
-        abort(501, 'レビューいいね機能は未実装です。');
-    })->name('reviews.like');
 
     Route::get('/genres', function () {
         abort(501, 'ジャンル管理機能は未実装です。');
