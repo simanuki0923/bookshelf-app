@@ -66,6 +66,18 @@ Route::middleware('auth')->group(function () {
         [ReviewController::class, 'store']
     )->name('reviews.store');
 
+    // レビュー編集
+    Route::get(
+        '/reviews/{review}/edit',
+        [ReviewController::class, 'edit']
+    )->name('reviews.edit');
+
+    // レビュー更新
+    Route::put(
+        '/reviews/{review}',
+        [ReviewController::class, 'update']
+    )->name('reviews.update');
+
     Route::get('/favorites', function () {
         abort(501, 'お気に入り一覧機能は未実装です。');
     })->name('favorites.index');
@@ -73,10 +85,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/books/{book}/favorites', function () {
         abort(501, 'お気に入り機能は未実装です。');
     })->name('favorites.toggle');
-
-    Route::get('/reviews/{review}/edit', function () {
-        abort(501, 'レビュー編集機能は未実装です。');
-    })->name('reviews.edit');
 
     Route::delete('/reviews/{review}', function () {
         abort(501, 'レビュー削除機能は未実装です。');
