@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BookController;
+use App\Http\Controllers\ReviewController;
 use Illuminate\Support\Facades\Route;
 
 // 書籍一覧
@@ -54,11 +55,16 @@ Route::middleware('auth')->group(function () {
         [BookController::class, 'destroy']
     )->name('books.destroy');
 
-    /*
+    /* /*
     |--------------------------------------------------------------------------
-    | その他の今後実装する機能
+    | レビュー投稿
     |--------------------------------------------------------------------------
     */
+
+    Route::post(
+        '/books/{book}/reviews',
+        [ReviewController::class, 'store']
+    )->name('reviews.store');
 
     Route::get('/favorites', function () {
         abort(501, 'お気に入り一覧機能は未実装です。');
@@ -67,10 +73,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/books/{book}/favorites', function () {
         abort(501, 'お気に入り機能は未実装です。');
     })->name('favorites.toggle');
-
-    Route::post('/books/{book}/reviews', function () {
-        abort(501, 'レビュー投稿機能は未実装です。');
-    })->name('reviews.store');
 
     Route::get('/reviews/{review}/edit', function () {
         abort(501, 'レビュー編集機能は未実装です。');
