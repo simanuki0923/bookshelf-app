@@ -41,10 +41,8 @@ class ReviewController extends Controller
      */
     public function edit(Review $review): View
     {
-        // 投稿者本人だけ編集可能
         $this->authorize('update', $review);
 
-        // 編集画面で書籍情報を使用
         $review->load('book');
 
         return view(
@@ -60,10 +58,8 @@ class ReviewController extends Controller
         UpdateReviewRequest $request,
         Review $review
     ): RedirectResponse {
-        // 投稿者本人だけ更新可能
         $this->authorize('update', $review);
 
-        // 更新後の遷移先として書籍を保持
         $book = $review->book;
 
         $review->update(
@@ -75,6 +71,28 @@ class ReviewController extends Controller
             ->with(
                 'success',
                 'レビューを更新しました。'
+            );
+    }
+
+    /**
+     * レビュー削除
+     */
+    public function destroy(Review $review): RedirectResponse
+    {
+        // 投稿者本人か確認
+        $this->authorize('delete', $review);
+
+        // 削除後の遷移先を先に保持
+        $book = $review->book;
+
+        // レビュー削除
+        $review->delete();
+
+        return redirect()
+            ->route('books.show', $book)
+            ->with(
+                'success',
+                'レビューを削除しました。'
             );
     }
 }
