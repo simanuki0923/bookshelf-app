@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BookController;
+use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ReviewController;
 use Illuminate\Support\Facades\Route;
 
@@ -84,13 +85,20 @@ Route::middleware('auth')->group(function () {
         [ReviewController::class, 'destroy']
     )->name('reviews.destroy');
 
+    /*
+    |--------------------------------------------------------------------------
+    | お気に入り
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/books/{book}/favorites',
+        [FavoriteController::class, 'toggle']
+    )->name('favorites.toggle');
+
     Route::get('/favorites', function () {
         abort(501, 'お気に入り一覧機能は未実装です。');
     })->name('favorites.index');
-
-    Route::post('/books/{book}/favorites', function () {
-        abort(501, 'お気に入り機能は未実装です。');
-    })->name('favorites.toggle');
 
     Route::post('/reviews/{review}/like', function () {
         abort(501, 'レビューいいね機能は未実装です。');
