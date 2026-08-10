@@ -90,15 +90,15 @@ Route::middleware('auth')->group(function () {
     | お気に入り
     |--------------------------------------------------------------------------
     */
+    Route::get(
+        '/favorites',
+        [FavoriteController::class, 'index']
+    )->name('favorites.index');
 
     Route::post(
         '/books/{book}/favorites',
         [FavoriteController::class, 'toggle']
     )->name('favorites.toggle');
-
-    Route::get('/favorites', function () {
-        abort(501, 'お気に入り一覧機能は未実装です。');
-    })->name('favorites.index');
 
     Route::post('/reviews/{review}/like', function () {
         abort(501, 'レビューいいね機能は未実装です。');
