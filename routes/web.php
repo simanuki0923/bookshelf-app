@@ -3,6 +3,7 @@
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\GenreController;
+use App\Http\Controllers\RankingController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ReviewLikeController;
 use Illuminate\Support\Facades\Route;
@@ -158,9 +159,10 @@ Route::middleware('auth')->group(function () {
 });
 
 // ランキング
-Route::get('/ranking', function () {
-    abort(501, 'ランキング機能は未実装です。');
-})->name('ranking.index');
+Route::get(
+    '/ranking',
+    [RankingController::class, 'index']
+)->name('ranking.index');
 
 // 書籍詳細
 Route::get(
