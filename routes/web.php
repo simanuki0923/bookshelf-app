@@ -150,11 +150,11 @@ Route::middleware('auth')->group(function () {
         [GenreController::class, 'show']
     )->name('genres.show');
 
-    // 削除（feature/genre-delete で実装予定）
-    Route::delete('/genres/{genre}', function () {
-        abort(501, 'ジャンル削除機能は未実装です。');
-    })->name('genres.destroy');
-
+    // 削除
+    Route::delete(
+        '/genres/{genre}',
+        [GenreController::class, 'destroy']
+    )->name('genres.destroy');
 });
 
 // ランキング
