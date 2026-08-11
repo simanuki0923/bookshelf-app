@@ -114,31 +114,46 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-    // ジャンル一覧：今回実装
+    // 一覧
     Route::get(
         '/genres',
         [GenreController::class, 'index']
     )->name('genres.index');
 
-    // ジャンル登録：後で実装
-    Route::get('/genres/create', function () {
-        abort(501, 'ジャンル登録機能は未実装です。');
-    })->name('genres.create');
+    // 登録画面
+    Route::get(
+        '/genres/create',
+        [GenreController::class, 'create']
+    )->name('genres.create');
 
-    // ジャンル編集：後で実装
-    Route::get('/genres/{genre}/edit', function () {
-        abort(501, 'ジャンル編集機能は未実装です。');
-    })->name('genres.edit');
+    // 登録
+    Route::post(
+        '/genres',
+        [GenreController::class, 'store']
+    )->name('genres.store');
 
-    // ジャンル削除：後で実装
+    // 編集画面
+    Route::get(
+        '/genres/{genre}/edit',
+        [GenreController::class, 'edit']
+    )->name('genres.edit');
+
+    // 更新
+    Route::put(
+        '/genres/{genre}',
+        [GenreController::class, 'update']
+    )->name('genres.update');
+
+    // 詳細
+    Route::get(
+        '/genres/{genre}',
+        [GenreController::class, 'show']
+    )->name('genres.show');
+
+    // 削除（feature/genre-delete で実装予定）
     Route::delete('/genres/{genre}', function () {
         abort(501, 'ジャンル削除機能は未実装です。');
     })->name('genres.destroy');
-
-    // ジャンル詳細：このfeature/genres-readで次に実装
-    Route::get('/genres/{genre}', function () {
-        abort(501, 'ジャンル詳細機能は未実装です。');
-    })->name('genres.show');
 
 });
 
