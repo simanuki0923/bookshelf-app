@@ -27,7 +27,7 @@ class UpdateReviewRequest extends FormRequest
             ],
 
             'comment' => [
-                'nullable',
+                'required',
                 'string',
             ],
         ];

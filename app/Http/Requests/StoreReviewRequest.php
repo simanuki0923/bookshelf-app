@@ -27,7 +27,7 @@ class StoreReviewRequest extends FormRequest
             ],
 
             'comment' => [
-                'nullable',
+                'required',
                 'string',
             ],
         ];

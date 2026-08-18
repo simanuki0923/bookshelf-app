@@ -136,7 +136,7 @@ class ReviewCreateTest extends TestCase
     /**
      * コメントなしでもレビューを投稿できる
      */
-    public function test_comment_is_optional(): void
+    public function test_comment_is_required(): void
     {
         $user = User::factory()->create();
         $book = Book::factory()->create();
@@ -145,17 +145,15 @@ class ReviewCreateTest extends TestCase
             ->actingAs($user)
             ->post(route('reviews.store', $book), [
                 'rating' => 4,
+                'comment' => '',
             ]);
 
-        $response->assertRedirect(
-            route('books.show', $book)
-        );
+        $response->assertSessionHasErrors('comment');
 
-        $this->assertDatabaseHas('reviews', [
+        $this->assertDatabaseMissing('reviews', [
             'user_id' => $user->id,
             'book_id' => $book->id,
             'rating' => 4,
-            'comment' => null,
         ]);
     }
 

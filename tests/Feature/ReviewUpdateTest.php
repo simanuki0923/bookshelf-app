@@ -204,15 +204,16 @@ class ReviewUpdateTest extends TestCase
     }
 
     /**
-     * コメントは空欄でも更新できる
+     * コメントは必須
      */
-    public function test_comment_is_optional(): void
+    public function test_comment_is_required(): void
     {
         $user = User::factory()->create();
 
         $review = Review::factory()->create([
             'user_id' => $user->id,
-            'comment' => '削除予定コメント',
+            'rating' => 3,
+            'comment' => '変更前コメント',
         ]);
 
         $response = $this
@@ -222,15 +223,12 @@ class ReviewUpdateTest extends TestCase
                 'comment' => '',
             ]);
 
-        $response->assertRedirect(
-            route('books.show', $review->book)
-        );
+        $response->assertSessionHasErrors('comment');
 
         $review->refresh();
 
-        $this->assertNull(
-            $review->comment
-        );
+        $this->assertSame(3, $review->rating);
+        $this->assertSame('変更前コメント', $review->comment);
     }
 
     /**
