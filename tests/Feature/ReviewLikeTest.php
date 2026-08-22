@@ -44,6 +44,41 @@ class ReviewLikeTest extends TestCase
     }
 
     /**
+     * ログインユーザーは自分自身のレビューにもいいねできる
+     */
+    public function test_user_can_like_own_review(): void
+    {
+        $user = User::factory()->create();
+
+        $review = Review::factory()->create([
+            'user_id' => $user->id,
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->post(
+                route('reviews.like', $review)
+            );
+
+        $response->assertRedirect(
+            route('books.show', $review->book)
+        );
+
+        $response->assertSessionHas(
+            'success',
+            'レビューにいいねしました。'
+        );
+
+        $this->assertDatabaseHas(
+            'review_likes',
+            [
+                'user_id' => $user->id,
+                'review_id' => $review->id,
+            ]
+        );
+    }
+
+    /**
      * いいね済みレビューを再操作すると解除できる
      */
     public function test_authenticated_user_can_unlike_review(): void
