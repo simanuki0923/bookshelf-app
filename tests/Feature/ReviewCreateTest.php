@@ -134,7 +134,7 @@ class ReviewCreateTest extends TestCase
     }
 
     /**
-     * コメントなしでもレビューを投稿できる
+     * コメントは必須
      */
     public function test_comment_is_required(): void
     {
@@ -184,6 +184,53 @@ class ReviewCreateTest extends TestCase
             'book_id' => $book2->id,
             'comment' => 'Book1のレビュー',
         ]);
+    }
+
+    /**
+     * 同一ユーザーは同一書籍に複数回レビューを投稿できる
+     */
+    public function test_same_user_can_create_multiple_reviews_for_same_book(): void
+    {
+        $user = User::factory()->create();
+        $book = Book::factory()->create();
+
+        $firstResponse = $this
+            ->actingAs($user)
+            ->post(route('reviews.store', $book), [
+                'rating' => 5,
+                'comment' => '1回目のレビュー',
+            ]);
+
+        $firstResponse->assertRedirect(
+            route('books.show', $book)
+        );
+
+        $secondResponse = $this
+            ->actingAs($user)
+            ->post(route('reviews.store', $book), [
+                'rating' => 4,
+                'comment' => '2回目のレビュー',
+            ]);
+
+        $secondResponse->assertRedirect(
+            route('books.show', $book)
+        );
+
+        $this->assertDatabaseHas('reviews', [
+            'user_id' => $user->id,
+            'book_id' => $book->id,
+            'rating' => 5,
+            'comment' => '1回目のレビュー',
+        ]);
+
+        $this->assertDatabaseHas('reviews', [
+            'user_id' => $user->id,
+            'book_id' => $book->id,
+            'rating' => 4,
+            'comment' => '2回目のレビュー',
+        ]);
+
+        $this->assertDatabaseCount('reviews', 2);
     }
 
     /**
