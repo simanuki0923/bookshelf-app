@@ -57,7 +57,7 @@ class UpdateBookRequest extends FormRequest
             'image_url' => [
                 'nullable',
                 'url',
-                'max:2048',
+                'max:255',
             ],
 
             'genres' => [
@@ -67,10 +67,9 @@ class UpdateBookRequest extends FormRequest
             ],
 
             'genres.*' => [
-                'integer',
-                'distinct',
-                Rule::exists('genres', 'id'),
-            ],
+    'integer',
+    Rule::exists('genres', 'id'),
+],
         ];
     }
 
@@ -98,14 +97,13 @@ class UpdateBookRequest extends FormRequest
             'description.string' => '説明を正しく入力してください。',
 
             'image_url.url' => '画像URLは正しいURL形式で入力してください。',
-            'image_url.max' => '画像URLは2048文字以内で入力してください。',
+            'image_url.max' => '画像URLは255文字以内で入力してください。',
 
             'genres.required' => 'ジャンルを1つ以上選択してください。',
             'genres.array' => 'ジャンルの指定が正しくありません。',
             'genres.min' => 'ジャンルを1つ以上選択してください。',
 
             'genres.*.integer' => 'ジャンルの指定が正しくありません。',
-            'genres.*.distinct' => '同じジャンルが重複しています。',
             'genres.*.exists' => '選択されたジャンルが存在しません。',
         ];
     }

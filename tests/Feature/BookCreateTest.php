@@ -250,6 +250,57 @@ class BookCreateTest extends TestCase
     }
 
     /**
+     * 同じジャンルIDを複数指定しても
+     * distinctバリデーションエラーにならない
+     */
+    public function test_duplicate_genre_ids_are_not_rejected_by_validation(): void
+    {
+        $user = User::factory()->create();
+        $genre = Genre::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('books.store'), [
+                'title' => 'テスト書籍',
+                'author' => 'テスト著者',
+                'isbn' => '9781234567890',
+                'published_date' => '2026-08-01',
+                'genres' => [
+                    $genre->id,
+                    $genre->id,
+                ],
+            ]);
+
+        $response->assertSessionDoesntHaveErrors([
+            'genres',
+            'genres.0',
+            'genres.1',
+        ]);
+
+        $book = Book::where(
+            'isbn',
+            '9781234567890'
+        )->firstOrFail();
+
+        $response->assertRedirect(
+            route('books.show', $book)
+        );
+
+        $this->assertDatabaseHas(
+            'book_genre',
+            [
+                'book_id' => $book->id,
+                'genre_id' => $genre->id,
+            ]
+        );
+
+        $this->assertSame(
+            1,
+            $book->genres()->count()
+        );
+    }
+
+    /**
      * 不正な画像URLは登録できない
      */
     public function test_image_url_must_be_valid_url(): void
@@ -269,6 +320,104 @@ class BookCreateTest extends TestCase
             ->assertSessionHasErrors(
                 'image_url'
             );
+    }
+
+    /**
+     * 画像URLは255文字まで登録できる
+     */
+    public function test_image_url_can_be_255_characters(): void
+    {
+        $user = User::factory()->create();
+        $genre = Genre::factory()->create();
+
+        $prefix = 'https://example.com/';
+
+        $imageUrl = $prefix
+            . str_repeat(
+                'a',
+                255 - strlen($prefix)
+            );
+
+        $this->assertSame(
+            255,
+            strlen($imageUrl)
+        );
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('books.store'), [
+                'title' => 'テスト書籍',
+                'author' => 'テスト著者',
+                'isbn' => '9781234567890',
+                'published_date' => '2026-08-01',
+                'image_url' => $imageUrl,
+                'genres' => [$genre->id],
+            ]);
+
+        $response->assertSessionDoesntHaveErrors(
+            'image_url'
+        );
+
+        $book = Book::where(
+            'isbn',
+            '9781234567890'
+        )->firstOrFail();
+
+        $response->assertRedirect(
+            route('books.show', $book)
+        );
+
+        $this->assertDatabaseHas(
+            'books',
+            [
+                'id' => $book->id,
+                'image_url' => $imageUrl,
+            ]
+        );
+    }
+
+    /**
+     * 画像URLは256文字以上の場合登録できない
+     */
+    public function test_image_url_cannot_exceed_255_characters(): void
+    {
+        $user = User::factory()->create();
+        $genre = Genre::factory()->create();
+
+        $prefix = 'https://example.com/';
+
+        $imageUrl = $prefix
+            . str_repeat(
+                'a',
+                256 - strlen($prefix)
+            );
+
+        $this->assertSame(
+            256,
+            strlen($imageUrl)
+        );
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('books.store'), [
+                'title' => 'テスト書籍',
+                'author' => 'テスト著者',
+                'isbn' => '9781234567890',
+                'published_date' => '2026-08-01',
+                'image_url' => $imageUrl,
+                'genres' => [$genre->id],
+            ]);
+
+        $response->assertSessionHasErrors(
+            'image_url'
+        );
+
+        $this->assertDatabaseMissing(
+            'books',
+            [
+                'isbn' => '9781234567890',
+            ]
+        );
     }
 
     /**

@@ -112,6 +112,7 @@ class BookUpdateTest extends TestCase
             'title' => '更新後タイトル',
             'author' => '更新後著者',
             'isbn' => '9781234567890',
+            'image_url' => 'https://example.com/book.jpg',
         ]);
     }
 
@@ -238,6 +239,200 @@ class BookUpdateTest extends TestCase
                 'published_date',
                 'genres',
             ]);
+    }
+
+    /**
+     * 不正な画像URLでは更新できない
+     */
+    public function test_image_url_must_be_valid_url(): void
+    {
+        $owner = User::factory()->create();
+        $genre = Genre::factory()->create();
+
+        $book = Book::factory()->create([
+            'user_id' => $owner->id,
+            'isbn' => '9781234567890',
+        ]);
+
+        $this
+            ->actingAs($owner)
+            ->put(route('books.update', $book), [
+                'title' => '更新タイトル',
+                'author' => '更新著者',
+                'isbn' => '9781234567890',
+                'published_date' => '2026-08-01',
+                'description' => '更新説明',
+                'image_url' => 'invalid-url',
+                'genres' => [$genre->id],
+            ])
+            ->assertSessionHasErrors(
+                'image_url'
+            );
+    }
+
+    /**
+     * 画像URLは255文字まで更新できる
+     */
+    public function test_image_url_can_be_255_characters(): void
+    {
+        $owner = User::factory()->create();
+        $genre = Genre::factory()->create();
+
+        $book = Book::factory()->create([
+            'user_id' => $owner->id,
+            'isbn' => '9781234567890',
+            'image_url' => 'https://example.com/original.jpg',
+        ]);
+
+        $prefix = 'https://example.com/';
+
+        $imageUrl = $prefix
+            .str_repeat(
+                'a',
+                255 - strlen($prefix)
+            );
+
+        $this->assertSame(
+            255,
+            strlen($imageUrl)
+        );
+
+        $response = $this
+            ->actingAs($owner)
+            ->put(route('books.update', $book), [
+                'title' => '更新タイトル',
+                'author' => '更新著者',
+                'isbn' => '9781234567890',
+                'published_date' => '2026-08-01',
+                'description' => '更新説明',
+                'image_url' => $imageUrl,
+                'genres' => [$genre->id],
+            ]);
+
+        $response->assertSessionDoesntHaveErrors(
+            'image_url'
+        );
+
+        $response->assertRedirect(
+            route('books.show', $book)
+        );
+
+        $this->assertDatabaseHas(
+            'books',
+            [
+                'id' => $book->id,
+                'image_url' => $imageUrl,
+            ]
+        );
+    }
+
+    /**
+     * 画像URLは256文字以上の場合更新できない
+     */
+    public function test_image_url_cannot_exceed_255_characters(): void
+    {
+        $owner = User::factory()->create();
+        $genre = Genre::factory()->create();
+
+        $originalImageUrl = 'https://example.com/original.jpg';
+
+        $book = Book::factory()->create([
+            'user_id' => $owner->id,
+            'isbn' => '9781234567890',
+            'image_url' => $originalImageUrl,
+        ]);
+
+        $prefix = 'https://example.com/';
+
+        $imageUrl = $prefix
+            .str_repeat(
+                'a',
+                256 - strlen($prefix)
+            );
+
+        $this->assertSame(
+            256,
+            strlen($imageUrl)
+        );
+
+        $response = $this
+            ->actingAs($owner)
+            ->put(route('books.update', $book), [
+                'title' => '更新タイトル',
+                'author' => '更新著者',
+                'isbn' => '9781234567890',
+                'published_date' => '2026-08-01',
+                'description' => '更新説明',
+                'image_url' => $imageUrl,
+                'genres' => [$genre->id],
+            ]);
+
+        $response->assertSessionHasErrors(
+            'image_url'
+        );
+
+        $this->assertDatabaseHas(
+            'books',
+            [
+                'id' => $book->id,
+                'image_url' => $originalImageUrl,
+            ]
+        );
+    }
+
+    /**
+     * 同じジャンルIDを複数指定しても
+     * distinctバリデーションエラーにならない
+     */
+    public function test_duplicate_genre_ids_are_not_rejected_by_validation(): void
+    {
+        $owner = User::factory()->create();
+        $genre = Genre::factory()->create();
+
+        $book = Book::factory()->create([
+            'user_id' => $owner->id,
+            'isbn' => '9781234567890',
+        ]);
+
+        $response = $this
+            ->actingAs($owner)
+            ->put(route('books.update', $book), [
+                'title' => '更新タイトル',
+                'author' => '更新著者',
+                'isbn' => '9781234567890',
+                'published_date' => '2026-08-01',
+                'description' => '更新説明',
+                'image_url' => null,
+                'genres' => [
+                    $genre->id,
+                    $genre->id,
+                ],
+            ]);
+
+        $response->assertSessionDoesntHaveErrors([
+            'genres',
+            'genres.0',
+            'genres.1',
+        ]);
+
+        $response->assertRedirect(
+            route('books.show', $book)
+        );
+
+        $this->assertDatabaseHas(
+            'book_genre',
+            [
+                'book_id' => $book->id,
+                'genre_id' => $genre->id,
+            ]
+        );
+
+        $book->refresh();
+
+        $this->assertSame(
+            1,
+            $book->genres()->count()
+        );
     }
 
     /**
