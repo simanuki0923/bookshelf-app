@@ -5,6 +5,7 @@ namespace Tests\Feature\Auth;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -150,5 +151,35 @@ class AuthenticationTest extends TestCase
         $this->actingAs($user)
             ->get('/register')
             ->assertRedirect('/');
+    }
+
+    /**
+     * 要件外のFortify機能ルートは登録されない
+     */
+    public function test_unrequired_fortify_feature_routes_are_not_registered(): void
+    {
+        // Basic認証で必要なルート
+        $this->assertTrue(Route::has('register'));
+        $this->assertTrue(Route::has('login'));
+        $this->assertTrue(Route::has('logout'));
+
+        // パスワードリセット
+        $this->assertFalse(Route::has('password.request'));
+        $this->assertFalse(Route::has('password.email'));
+        $this->assertFalse(Route::has('password.reset'));
+
+        // メール認証
+        $this->assertFalse(Route::has('verification.notice'));
+        $this->assertFalse(Route::has('verification.verify'));
+        $this->assertFalse(Route::has('verification.send'));
+
+        // プロフィール・パスワード更新
+        $this->assertFalse(Route::has('user-profile-information.update'));
+        $this->assertFalse(Route::has('user-password.update'));
+
+        // 二要素認証
+        $this->assertFalse(Route::has('two-factor.enable'));
+        $this->assertFalse(Route::has('two-factor.disable'));
+        $this->assertFalse(Route::has('two-factor.confirm'));
     }
 }
