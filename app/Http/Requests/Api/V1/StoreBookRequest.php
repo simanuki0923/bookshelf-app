@@ -46,7 +46,7 @@ class StoreBookRequest extends FormRequest
             'image_url' => [
                 'nullable',
                 'url',
-                'max:2048',
+                'max:255',
             ],
             'genres' => [
                 'required',
@@ -54,11 +54,9 @@ class StoreBookRequest extends FormRequest
                 'min:1',
             ],
             'genres.*' => [
-                'required',
-                'integer',
-                'distinct',
-                'exists:genres,id',
-            ],
+    'integer',
+    'exists:genres,id',
+],
         ];
     }
 
@@ -87,13 +85,12 @@ class StoreBookRequest extends FormRequest
             'description.string' => '説明を正しく入力してください。',
 
             'image_url.url' => '画像URLを正しいURL形式で入力してください。',
-            'image_url.max' => '画像URLは2048文字以内で入力してください。',
+            'image_url.max' => '画像URLは255文字以内で入力してください。',
 
             'genres.required' => 'ジャンルを1つ以上選択してください。',
             'genres.array' => 'ジャンルを正しく指定してください。',
             'genres.min' => 'ジャンルを1つ以上選択してください。',
             'genres.*.integer' => 'ジャンルを正しく指定してください。',
-            'genres.*.distinct' => '同じジャンルが重複しています。',
             'genres.*.exists' => '存在しないジャンルが指定されています。',
         ];
     }
