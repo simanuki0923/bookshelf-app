@@ -158,6 +158,78 @@ class ReviewCreateTest extends TestCase
     }
 
     /**
+     * コメントは1000文字まで投稿できる
+     */
+    public function test_comment_can_be_1000_characters(): void
+    {
+        $user = User::factory()->create();
+        $book = Book::factory()->create();
+
+        $comment = str_repeat('あ', 1000);
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('reviews.store', $book), [
+                'rating' => 5,
+                'comment' => $comment,
+            ]);
+
+        $response->assertSessionDoesntHaveErrors(
+            'comment'
+        );
+
+        $response->assertRedirect(
+            route('books.show', $book)
+        );
+
+        $this->assertDatabaseHas(
+            'reviews',
+            [
+                'user_id' => $user->id,
+                'book_id' => $book->id,
+                'rating' => 5,
+                'comment' => $comment,
+            ]
+        );
+    }
+
+    /**
+     * コメントは1000文字を超えると投稿できない
+     */
+    public function test_comment_cannot_exceed_1000_characters(): void
+    {
+        $user = User::factory()->create();
+        $book = Book::factory()->create();
+
+        $comment = str_repeat('あ', 1001);
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('reviews.store', $book), [
+                'rating' => 5,
+                'comment' => $comment,
+            ]);
+
+        $response->assertSessionHasErrors(
+            'comment'
+        );
+
+        $this->assertDatabaseMissing(
+            'reviews',
+            [
+                'user_id' => $user->id,
+                'book_id' => $book->id,
+                'comment' => $comment,
+            ]
+        );
+
+        $this->assertDatabaseCount(
+            'reviews',
+            0
+        );
+    }
+
+    /**
      * レビューは対象書籍に紐付いて登録される
      */
     public function test_review_is_attached_to_correct_book(): void
