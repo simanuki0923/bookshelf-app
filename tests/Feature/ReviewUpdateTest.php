@@ -223,12 +223,107 @@ class ReviewUpdateTest extends TestCase
                 'comment' => '',
             ]);
 
-        $response->assertSessionHasErrors('comment');
+        $response->assertSessionHasErrors(
+            'comment'
+        );
 
         $review->refresh();
 
-        $this->assertSame(3, $review->rating);
-        $this->assertSame('変更前コメント', $review->comment);
+        $this->assertSame(
+            3,
+            $review->rating
+        );
+
+        $this->assertSame(
+            '変更前コメント',
+            $review->comment
+        );
+    }
+
+    /**
+     * コメントは1000文字まで更新できる
+     */
+    public function test_comment_can_be_1000_characters(): void
+    {
+        $user = User::factory()->create();
+
+        $review = Review::factory()->create([
+            'user_id' => $user->id,
+            'rating' => 3,
+            'comment' => '更新前コメント',
+        ]);
+
+        $comment = str_repeat(
+            'あ',
+            1000
+        );
+
+        $response = $this
+            ->actingAs($user)
+            ->put(route('reviews.update', $review), [
+                'rating' => 5,
+                'comment' => $comment,
+            ]);
+
+        $response->assertSessionDoesntHaveErrors(
+            'comment'
+        );
+
+        $response->assertRedirect(
+            route('books.show', $review->book)
+        );
+
+        $this->assertDatabaseHas(
+            'reviews',
+            [
+                'id' => $review->id,
+                'user_id' => $user->id,
+                'rating' => 5,
+                'comment' => $comment,
+            ]
+        );
+    }
+
+    /**
+     * コメントは1000文字を超えると更新できない
+     */
+    public function test_comment_cannot_exceed_1000_characters(): void
+    {
+        $user = User::factory()->create();
+
+        $review = Review::factory()->create([
+            'user_id' => $user->id,
+            'rating' => 3,
+            'comment' => '更新前コメント',
+        ]);
+
+        $comment = str_repeat(
+            'あ',
+            1001
+        );
+
+        $response = $this
+            ->actingAs($user)
+            ->put(route('reviews.update', $review), [
+                'rating' => 5,
+                'comment' => $comment,
+            ]);
+
+        $response->assertSessionHasErrors(
+            'comment'
+        );
+
+        $review->refresh();
+
+        $this->assertSame(
+            3,
+            $review->rating
+        );
+
+        $this->assertSame(
+            '更新前コメント',
+            $review->comment
+        );
     }
 
     /**
