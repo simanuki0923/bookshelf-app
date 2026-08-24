@@ -57,9 +57,9 @@ class UpdateBookRequest extends FormRequest
                 'min:1',
             ],
             'genres.*' => [
-    'integer',
-    'exists:genres,id',
-],
+                'integer',
+                'exists:genres,id',
+            ],
         ];
     }
 

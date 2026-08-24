@@ -333,7 +333,7 @@ class BookCreateTest extends TestCase
         $prefix = 'https://example.com/';
 
         $imageUrl = $prefix
-            . str_repeat(
+            .str_repeat(
                 'a',
                 255 - strlen($prefix)
             );
@@ -387,7 +387,7 @@ class BookCreateTest extends TestCase
         $prefix = 'https://example.com/';
 
         $imageUrl = $prefix
-            . str_repeat(
+            .str_repeat(
                 'a',
                 256 - strlen($prefix)
             );
