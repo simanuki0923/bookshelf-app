@@ -62,9 +62,9 @@ class StoreBookRequest extends FormRequest
             ],
 
             'genres.*' => [
-    'integer',
-    Rule::exists('genres', 'id'),
-],
+                'integer',
+                Rule::exists('genres', 'id'),
+            ],
         ];
     }
 
