@@ -21,12 +21,13 @@ class FavoriteToggleTest extends TestCase
 
         $response = $this
             ->actingAs($user)
+            ->from(route('books.index'))
             ->post(
                 route('favorites.toggle', $book)
             );
 
         $response->assertRedirect(
-            route('books.show', $book)
+            route('books.index')
         );
 
         $response->assertSessionHas(
@@ -64,12 +65,13 @@ class FavoriteToggleTest extends TestCase
 
         $response = $this
             ->actingAs($user)
+            ->from(route('favorites.index'))
             ->post(
                 route('favorites.toggle', $book)
             );
 
         $response->assertRedirect(
-            route('books.show', $book)
+            route('favorites.index')
         );
 
         $response->assertSessionHas(

@@ -39,8 +39,7 @@ class FavoriteController extends Controller
             ? 'お気に入りに追加しました。'
             : 'お気に入りから解除しました。';
 
-        return redirect()
-            ->route('books.show', $book)
+        return back()
             ->with('success', $message);
     }
 }
