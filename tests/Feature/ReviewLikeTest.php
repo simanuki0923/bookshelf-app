@@ -21,6 +21,7 @@ class ReviewLikeTest extends TestCase
 
         $response = $this
             ->actingAs($user)
+            ->from(route('books.show', $review->book))
             ->post(
                 route('reviews.like', $review)
             );
@@ -56,12 +57,13 @@ class ReviewLikeTest extends TestCase
 
         $response = $this
             ->actingAs($user)
+            ->from(route('books.index'))
             ->post(
                 route('reviews.like', $review)
             );
 
         $response->assertRedirect(
-            route('books.show', $review->book)
+            route('books.index')
         );
 
         $response->assertSessionHas(
@@ -99,12 +101,13 @@ class ReviewLikeTest extends TestCase
 
         $response = $this
             ->actingAs($user)
+            ->from(route('books.index'))
             ->post(
                 route('reviews.like', $review)
             );
 
         $response->assertRedirect(
-            route('books.show', $review->book)
+            route('books.index')
         );
 
         $response->assertSessionHas(

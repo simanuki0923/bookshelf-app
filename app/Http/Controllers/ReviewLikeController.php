@@ -23,8 +23,7 @@ class ReviewLikeController extends Controller
             ? 'レビューにいいねしました。'
             : 'レビューのいいねを解除しました。';
 
-        return redirect()
-            ->route('books.show', $review->book)
+        return back()
             ->with('success', $message);
     }
 }

@@ -258,6 +258,7 @@ class BasicWebTest extends TestCase
 
         $this
             ->actingAs($user)
+            ->from(route('books.show', $book))
             ->post(
                 route('favorites.toggle', $book)
             )
@@ -281,6 +282,7 @@ class BasicWebTest extends TestCase
 
         $this
             ->actingAs($user)
+            ->from(route('books.show', $book))
             ->post(
                 route('reviews.like', $review)
             )
