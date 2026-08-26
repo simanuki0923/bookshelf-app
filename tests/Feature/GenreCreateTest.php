@@ -58,7 +58,7 @@ class GenreCreateTest extends TestCase
 
         $response->assertSessionHas(
             'success',
-            'ジャンルを登録しました。'
+            'ジャンルを作成しました。'
         );
 
         $this->assertDatabaseHas(

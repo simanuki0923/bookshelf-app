@@ -106,6 +106,11 @@ class BookUpdateTest extends TestCase
             route('books.show', $book)
         );
 
+        $response->assertSessionHas(
+            'success',
+            '書籍情報を更新しました。'
+        );
+
         $this->assertDatabaseHas('books', [
             'id' => $book->id,
             'user_id' => $owner->id,
