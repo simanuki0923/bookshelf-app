@@ -555,7 +555,7 @@ class BookApiTest extends TestCase
 
         $book = Book::factory()->create();
 
-        Review::factory()->create([
+        $review = Review::factory()->create([
             'user_id' => $user->id,
             'book_id' => $book->id,
             'rating' => 5,
@@ -569,6 +569,10 @@ class BookApiTest extends TestCase
         $response
             ->assertOk()
             ->assertJsonPath(
+                'data.reviews.0.id',
+                $review->id
+            )
+            ->assertJsonPath(
                 'data.reviews.0.user_name',
                 'レビュー投稿者'
             )
@@ -579,6 +583,35 @@ class BookApiTest extends TestCase
             ->assertJsonPath(
                 'data.reviews.0.comment',
                 'APIレビューテスト'
+            )
+            ->assertJsonPath(
+                'data.reviews.0.created_at',
+                $review->created_at->toISOString()
+            );
+    }
+
+    /**
+     * 書籍詳細に複数のレビューを含める
+     */
+    public function test_book_detail_contains_multiple_reviews(): void
+    {
+        $book = Book::factory()->create();
+
+        Review::factory()
+            ->count(2)
+            ->create([
+                'book_id' => $book->id,
+            ]);
+
+        $response = $this->getJson(
+            route('api.v1.books.show', $book)
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonCount(
+                2,
+                'data.reviews'
             );
     }
 
