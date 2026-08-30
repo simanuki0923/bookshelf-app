@@ -98,13 +98,36 @@ class BookApiTest extends TestCase
     }
 
     /**
-     * 存在しない書籍は404を返す
+     * 存在しない書籍の更新は404とJSONエラーを返す
      */
-    public function test_nonexistent_book_returns_404(): void
+    public function test_updating_nonexistent_book_returns_404_with_json_error(): void
     {
-        $this->getJson(
+        $response = $this->putJson(
+            '/api/v1/books/999999',
+            []
+        );
+
+        $response
+            ->assertNotFound()
+            ->assertJson([
+                'error' => '書籍が見つかりません。',
+            ]);
+    }
+
+    /**
+     * 存在しない書籍の削除は404とJSONエラーを返す
+     */
+    public function test_deleting_nonexistent_book_returns_404_with_json_error(): void
+    {
+        $response = $this->deleteJson(
             '/api/v1/books/999999'
-        )->assertNotFound();
+        );
+
+        $response
+            ->assertNotFound()
+            ->assertJson([
+                'error' => '書籍が見つかりません。',
+            ]);
     }
 
     /**
