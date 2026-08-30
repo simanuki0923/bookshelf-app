@@ -239,4 +239,37 @@ class FavoriteToggleTest extends TestCase
             0
         );
     }
+
+    /**
+     * ユーザーは自分が登録した書籍もお気に入りに追加できる
+     */
+    public function test_user_can_favorite_own_book(): void
+    {
+        $user = User::factory()->create();
+
+        $book = Book::factory()->create([
+            'user_id' => $user->id,
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->from(
+                route('books.show', $book)
+            )
+            ->post(
+                route('favorites.toggle', $book)
+            );
+
+        $response->assertRedirect(
+            route('books.show', $book)
+        );
+
+        $this->assertDatabaseHas(
+            'favorites',
+            [
+                'user_id' => $user->id,
+                'book_id' => $book->id,
+            ]
+        );
+    }
 }
