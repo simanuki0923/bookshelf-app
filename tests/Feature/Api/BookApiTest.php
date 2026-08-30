@@ -36,6 +36,342 @@ class BookApiTest extends TestCase
     }
 
     /**
+     * タイトルの部分一致で書籍を検索できる
+     */
+    public function test_books_can_be_searched_by_title_keyword(): void
+    {
+        Book::factory()->create([
+            'title' => 'Laravel入門',
+            'author' => '山田太郎',
+        ]);
+
+        Book::factory()->create([
+            'title' => 'PHP実践',
+            'author' => '鈴木一郎',
+        ]);
+
+        $response = $this->getJson(
+            route('api.v1.books.index', [
+                'keyword' => 'Laravel',
+            ])
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath(
+                'data.0.title',
+                'Laravel入門'
+            );
+    }
+
+    /**
+     * 著者名の部分一致で書籍を検索できる
+     */
+    public function test_books_can_be_searched_by_author_keyword(): void
+    {
+        Book::factory()->create([
+            'title' => '書籍A',
+            'author' => '山田太郎',
+        ]);
+
+        Book::factory()->create([
+            'title' => '書籍B',
+            'author' => '鈴木一郎',
+        ]);
+
+        $response = $this->getJson(
+            route('api.v1.books.index', [
+                'keyword' => '山田',
+            ])
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath(
+                'data.0.author',
+                '山田太郎'
+            );
+    }
+
+    /**
+     * ジャンルIDで書籍を絞り込める
+     */
+    public function test_books_can_be_filtered_by_genre_id(): void
+    {
+        $targetGenre = Genre::factory()->create();
+        $otherGenre = Genre::factory()->create();
+
+        $targetBook = Book::factory()->create([
+            'title' => '対象書籍',
+        ]);
+
+        $otherBook = Book::factory()->create([
+            'title' => '対象外書籍',
+        ]);
+
+        $targetBook->genres()->attach(
+            $targetGenre->id
+        );
+
+        $otherBook->genres()->attach(
+            $otherGenre->id
+        );
+
+        $response = $this->getJson(
+            route('api.v1.books.index', [
+                'genre_id' => $targetGenre->id,
+            ])
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath(
+                'data.0.id',
+                $targetBook->id
+            );
+    }
+
+    /**
+     * キーワードとジャンルIDを組み合わせて絞り込める
+     */
+    public function test_keyword_and_genre_id_can_be_combined(): void
+    {
+        $targetGenre = Genre::factory()->create();
+        $otherGenre = Genre::factory()->create();
+
+        $targetBook = Book::factory()->create([
+            'title' => 'Laravel入門',
+            'author' => '山田太郎',
+        ]);
+
+        $sameKeywordBook = Book::factory()->create([
+            'title' => 'Laravel実践',
+            'author' => '鈴木一郎',
+        ]);
+
+        $targetBook->genres()->attach(
+            $targetGenre->id
+        );
+
+        $sameKeywordBook->genres()->attach(
+            $otherGenre->id
+        );
+
+        $response = $this->getJson(
+            route('api.v1.books.index', [
+                'keyword' => 'Laravel',
+                'genre_id' => $targetGenre->id,
+            ])
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath(
+                'data.0.id',
+                $targetBook->id
+            );
+    }
+
+    /**
+     * 1ページあたりの取得件数を指定できる
+     */
+    public function test_per_page_can_be_specified(): void
+    {
+        Book::factory()
+            ->count(5)
+            ->create();
+
+        $response = $this->getJson(
+            route('api.v1.books.index', [
+                'per_page' => 2,
+            ])
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath(
+                'meta.per_page',
+                2
+            );
+    }
+
+    /**
+     * per_page未指定時は10件取得する
+     */
+    public function test_default_per_page_is_ten(): void
+    {
+        Book::factory()
+            ->count(11)
+            ->create();
+
+        $response = $this->getJson(
+            route('api.v1.books.index')
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonCount(10, 'data')
+            ->assertJsonPath(
+                'meta.per_page',
+                10
+            );
+    }
+
+    /**
+     * ページ番号を指定できる
+     */
+    public function test_page_can_be_specified(): void
+    {
+        Book::factory()
+            ->count(3)
+            ->create();
+
+        $response = $this->getJson(
+            route('api.v1.books.index', [
+                'per_page' => 2,
+                'page' => 2,
+            ])
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'meta.current_page',
+                2
+            )
+            ->assertJsonCount(
+                1,
+                'data'
+            );
+    }
+
+    /**
+     * 存在しないジャンルIDは指定できない
+     */
+    public function test_nonexistent_genre_id_returns_validation_error(): void
+    {
+        $response = $this->getJson(
+            route('api.v1.books.index', [
+                'genre_id' => 999999,
+            ])
+        );
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'genre_id',
+            ]);
+    }
+
+    /**
+     * pageは1以上でなければならない
+     */
+    public function test_page_must_be_at_least_one(): void
+    {
+        $response = $this->getJson(
+            route('api.v1.books.index', [
+                'page' => 0,
+            ])
+        );
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'page',
+            ]);
+    }
+
+    /**
+     * per_pageは1以上でなければならない
+     */
+    public function test_per_page_must_be_at_least_one(): void
+    {
+        $response = $this->getJson(
+            route('api.v1.books.index', [
+                'per_page' => 0,
+            ])
+        );
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'per_page',
+            ]);
+    }
+
+    /**
+     * per_pageは100以下でなければならない
+     */
+    public function test_per_page_cannot_exceed_one_hundred(): void
+    {
+        $response = $this->getJson(
+            route('api.v1.books.index', [
+                'per_page' => 101,
+            ])
+        );
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'per_page',
+            ]);
+    }
+
+    /**
+     * 書籍一覧にジャンル・平均評価・レビュー件数を含める
+     */
+    public function test_book_index_contains_genres_average_rating_and_reviews_count(): void
+    {
+        $genre = Genre::factory()->create([
+            'name' => '技術書',
+        ]);
+
+        $book = Book::factory()->create();
+
+        $book->genres()->attach(
+            $genre->id
+        );
+
+        Review::factory()->create([
+            'book_id' => $book->id,
+            'rating' => 4,
+        ]);
+
+        Review::factory()->create([
+            'book_id' => $book->id,
+            'rating' => 2,
+        ]);
+
+        $response = $this->getJson(
+            route('api.v1.books.index')
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'data.0.id',
+                $book->id
+            )
+            ->assertJsonPath(
+                'data.0.genres.0.name',
+                '技術書'
+            )
+            ->assertJsonPath(
+                'data.0.average_rating',
+                3
+            )
+            ->assertJsonPath(
+                'data.0.reviews_count',
+                2
+            );
+    }
+
+    /**
      * 未認証でも書籍を登録できる
      */
     public function test_book_without_authentication_can_be_created(): void
@@ -98,6 +434,22 @@ class BookApiTest extends TestCase
     }
 
     /**
+     * 存在しない書籍詳細は404とJSONエラーを返す
+     */
+    public function test_nonexistent_book_returns_404_with_json_error(): void
+    {
+        $response = $this->getJson(
+            '/api/v1/books/999999'
+        );
+
+        $response
+            ->assertNotFound()
+            ->assertExactJson([
+                'error' => '書籍が見つかりません。',
+            ]);
+    }
+
+    /**
      * 存在しない書籍の更新は404とJSONエラーを返す
      */
     public function test_updating_nonexistent_book_returns_404_with_json_error(): void
@@ -109,7 +461,7 @@ class BookApiTest extends TestCase
 
         $response
             ->assertNotFound()
-            ->assertJson([
+            ->assertExactJson([
                 'error' => '書籍が見つかりません。',
             ]);
     }
@@ -125,7 +477,7 @@ class BookApiTest extends TestCase
 
         $response
             ->assertNotFound()
-            ->assertJson([
+            ->assertExactJson([
                 'error' => '書籍が見つかりません。',
             ]);
     }
@@ -390,10 +742,12 @@ class BookApiTest extends TestCase
         $user = User::factory()->create();
         $genre = Genre::factory()->create();
 
+        $originalImageUrl = 'https://example.com/original.jpg';
+
         $book = Book::factory()->create([
             'user_id' => $user->id,
             'isbn' => '9781234567890',
-            'image_url' => 'https://example.com/original.jpg',
+            'image_url' => $originalImageUrl,
         ]);
 
         $prefix = 'https://example.com/';
@@ -435,7 +789,7 @@ class BookApiTest extends TestCase
             'books',
             [
                 'id' => $book->id,
-                'image_url' => 'https://example.com/original.jpg',
+                'image_url' => $originalImageUrl,
             ]
         );
     }
