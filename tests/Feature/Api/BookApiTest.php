@@ -325,7 +325,7 @@ class BookApiTest extends TestCase
     /**
      * 書籍一覧にジャンル・平均評価・レビュー件数を含める
      */
-    public function test_book_index_contains_genres_average_rating_and_reviews_count(): void
+    public function test_book_index_contains_genres_average_rating_and_review_count(): void
     {
         $genre = Genre::factory()->create([
             'name' => '技術書',
@@ -366,8 +366,39 @@ class BookApiTest extends TestCase
                 3
             )
             ->assertJsonPath(
-                'data.0.reviews_count',
+                'data.0.review_count',
                 2
+            )
+            ->assertJsonMissingPath(
+                'data.0.reviews_count'
+            );
+    }
+
+    /**
+     * 書籍詳細にレビュー件数をreview_countで含める
+     */
+    public function test_book_detail_contains_review_count(): void
+    {
+        $book = Book::factory()->create();
+
+        Review::factory()
+            ->count(2)
+            ->create([
+                'book_id' => $book->id,
+            ]);
+
+        $response = $this->getJson(
+            route('api.v1.books.show', $book)
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'data.review_count',
+                2
+            )
+            ->assertJsonMissingPath(
+                'data.reviews_count'
             );
     }
 

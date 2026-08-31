@@ -36,7 +36,7 @@ class BookResource extends JsonResource
                     2
                 ),
 
-            'reviews_count' => (int) ($this->reviews_count ?? 0),
+            'review_count' => (int) ($this->reviews_count ?? 0),
 
             'reviews' => ReviewResource::collection(
                 $this->whenLoaded('reviews')
