@@ -25,7 +25,7 @@ class BookController extends Controller
 
         $keyword = $validated['keyword'] ?? null;
         $genreId = $validated['genre_id'] ?? null;
-        $perPage = (int) ($validated['per_page'] ?? 10);
+        $perPage = (int) ($validated['per_page'] ?? 20);
 
         $books = Book::query()
             ->with('genres')
