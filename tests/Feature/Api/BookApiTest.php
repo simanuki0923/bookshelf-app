@@ -201,12 +201,12 @@ class BookApiTest extends TestCase
     }
 
     /**
-     * per_page未指定時は10件取得する
+     * per_page未指定時は20件取得する
      */
-    public function test_default_per_page_is_ten(): void
+    public function test_default_per_page_is_twenty(): void
     {
         Book::factory()
-            ->count(11)
+            ->count(21)
             ->create();
 
         $response = $this->getJson(
@@ -215,10 +215,13 @@ class BookApiTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertJsonCount(10, 'data')
+            ->assertJsonCount(
+                20,
+                'data'
+            )
             ->assertJsonPath(
                 'meta.per_page',
-                10
+                20
             );
     }
 
