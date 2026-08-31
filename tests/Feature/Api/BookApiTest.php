@@ -290,7 +290,8 @@ class BookApiTest extends TestCase
     }
 
     /**
-     * per_pageは1以上でなければならない
+     * per_pageは1以上でなければならず、
+     * バリデーションエラーはLaravel標準JSON形式で返す
      */
     public function test_per_page_must_be_at_least_one(): void
     {
@@ -302,6 +303,12 @@ class BookApiTest extends TestCase
 
         $response
             ->assertUnprocessable()
+            ->assertJsonStructure([
+                'message',
+                'errors' => [
+                    'per_page',
+                ],
+            ])
             ->assertJsonValidationErrors([
                 'per_page',
             ]);
