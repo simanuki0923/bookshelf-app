@@ -486,7 +486,7 @@ class BookApiTest extends TestCase
         $response
             ->assertNotFound()
             ->assertExactJson([
-                'error' => '書籍が見つかりません。',
+                'error' => '書籍が見つかりませんでした。',
             ]);
     }
 
@@ -503,7 +503,7 @@ class BookApiTest extends TestCase
         $response
             ->assertNotFound()
             ->assertExactJson([
-                'error' => '書籍が見つかりません。',
+                'error' => '書籍が見つかりませんでした。',
             ]);
     }
 
@@ -519,7 +519,7 @@ class BookApiTest extends TestCase
         $response
             ->assertNotFound()
             ->assertExactJson([
-                'error' => '書籍が見つかりません。',
+                'error' => '書籍が見つかりませんでした。',
             ]);
     }
 
