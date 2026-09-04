@@ -46,7 +46,7 @@ class Handler extends ExceptionHandler
                 ) {
                     return response()->json(
                         [
-                            'error' => '書籍が見つかりません。',
+                            'error' => '書籍が見つかりませんでした。',
                         ],
                         Response::HTTP_NOT_FOUND
                     );
