@@ -32,7 +32,16 @@ class BookApiTest extends TestCase
                 'data',
                 'links',
                 'meta',
-            ]);
+            ])
+            ->assertJsonMissingPath(
+                'data.0.user_id'
+            )
+            ->assertJsonMissingPath(
+                'data.0.created_at'
+            )
+            ->assertJsonMissingPath(
+                'data.0.updated_at'
+            );
     }
 
     /**
@@ -436,7 +445,17 @@ class BookApiTest extends TestCase
             ]
         );
 
-        $response->assertCreated();
+        $response
+            ->assertCreated()
+            ->assertJsonMissingPath(
+                'data.user_id'
+            )
+            ->assertJsonMissingPath(
+                'data.created_at'
+            )
+            ->assertJsonMissingPath(
+                'data.updated_at'
+            );
 
         $this->assertDatabaseHas(
             'books',
@@ -471,6 +490,15 @@ class BookApiTest extends TestCase
             ->assertJsonPath(
                 'data.title',
                 'API詳細テスト'
+            )
+            ->assertJsonMissingPath(
+                'data.user_id'
+            )
+            ->assertJsonMissingPath(
+                'data.created_at'
+            )
+            ->assertJsonMissingPath(
+                'data.updated_at'
             );
     }
 
@@ -552,7 +580,17 @@ class BookApiTest extends TestCase
             ]
         );
 
-        $response->assertOk();
+        $response
+            ->assertOk()
+            ->assertJsonMissingPath(
+                'data.user_id'
+            )
+            ->assertJsonMissingPath(
+                'data.created_at'
+            )
+            ->assertJsonMissingPath(
+                'data.updated_at'
+            );
 
         $this->assertDatabaseHas(
             'books',

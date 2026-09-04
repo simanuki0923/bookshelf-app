@@ -11,7 +11,6 @@ class BookResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'user_id' => $this->user_id,
             'title' => $this->title,
             'author' => $this->author,
             'isbn' => $this->isbn,
@@ -41,9 +40,6 @@ class BookResource extends JsonResource
             'reviews' => ReviewResource::collection(
                 $this->whenLoaded('reviews')
             ),
-
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }
