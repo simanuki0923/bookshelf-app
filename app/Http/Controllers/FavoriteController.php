@@ -16,6 +16,7 @@ class FavoriteController extends Controller
     {
         $books = $request->user()
             ->favoriteBooks()
+            ->orderByDesc('books.created_at')
             ->paginate(10);
 
         return view(

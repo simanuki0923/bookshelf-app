@@ -294,4 +294,49 @@ class GenreShowTest extends TestCase
             ->get('/genres/999999')
             ->assertNotFound();
     }
+
+    /**
+     * ジャンル別書籍一覧は書籍の最新登録順で表示される
+     */
+    public function test_genre_books_are_displayed_in_latest_book_order(): void
+    {
+        $user = User::factory()->create();
+
+        $genre = Genre::factory()->create();
+
+        $oldBook = Book::factory()->create([
+            'title' => '古いジャンル書籍',
+            'created_at' => now()->subDay(),
+        ]);
+
+        $newBook = Book::factory()->create([
+            'title' => '新しいジャンル書籍',
+            'created_at' => now(),
+        ]);
+
+        $genre->books()->attach([
+            $oldBook->id,
+            $newBook->id,
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->get(route('genres.show', $genre));
+
+        $response->assertOk();
+
+        $response->assertViewHas(
+            'books',
+            function ($viewBooks) use ($newBook, $oldBook) {
+                return $viewBooks
+                    ->getCollection()
+                    ->pluck('id')
+                    ->values()
+                    ->all() === [
+                        $newBook->id,
+                        $oldBook->id,
+                    ];
+            }
+        );
+    }
 }
