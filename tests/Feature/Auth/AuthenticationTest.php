@@ -77,6 +77,57 @@ class AuthenticationTest extends TestCase
     }
 
     /**
+     * 7文字のパスワードでは会員登録できない
+     */
+    public function test_users_cannot_register_with_password_shorter_than_eight_characters(): void
+    {
+        $response = $this
+            ->from('/register')
+            ->post('/register', [
+                'name' => 'テストユーザー',
+                'email' => 'short-password@example.com',
+                'password' => '1234567',
+                'password_confirmation' => '1234567',
+            ]);
+
+        $response
+            ->assertRedirect('/register')
+            ->assertSessionHasErrors([
+                'password',
+            ]);
+
+        $this->assertDatabaseMissing(
+            'users',
+            [
+                'email' => 'short-password@example.com',
+            ]
+        );
+    }
+
+    /**
+     * 8文字のパスワードで会員登録できる
+     */
+    public function test_users_can_register_with_eight_character_password(): void
+    {
+        $response = $this->post('/register', [
+            'name' => 'テストユーザー',
+            'email' => 'eight-password@example.com',
+            'password' => '12345678',
+            'password_confirmation' => '12345678',
+        ]);
+
+        $response->assertRedirect('/');
+
+        $this->assertDatabaseHas(
+            'users',
+            [
+                'name' => 'テストユーザー',
+                'email' => 'eight-password@example.com',
+            ]
+        );
+    }
+
+    /**
      * ログイン画面を表示できる
      */
     public function test_login_screen_can_be_rendered(): void
