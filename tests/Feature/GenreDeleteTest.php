@@ -74,7 +74,7 @@ class GenreDeleteTest extends TestCase
 
         $response->assertSessionHas(
             'error',
-            '書籍に紐付いているジャンルは削除できません。'
+            'このジャンルには書籍が紐付いているため削除できません。'
         );
 
         $this->assertDatabaseHas(
