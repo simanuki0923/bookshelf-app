@@ -32,7 +32,7 @@ class BookResource extends JsonResource
                 ? null
                 : round(
                     (float) $this->reviews_avg_rating,
-                    2
+                    1
                 ),
 
             'review_count' => (int) ($this->reviews_count ?? 0),

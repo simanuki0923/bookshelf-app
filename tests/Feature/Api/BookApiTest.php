@@ -394,6 +394,59 @@ class BookApiTest extends TestCase
     }
 
     /**
+     * 平均評価は小数第1位までで返す
+     */
+    public function test_average_rating_is_rounded_to_one_decimal_place(): void
+    {
+        $book = Book::factory()->create();
+
+        Review::factory()->create([
+            'book_id' => $book->id,
+            'rating' => 4,
+        ]);
+
+        Review::factory()->create([
+            'book_id' => $book->id,
+            'rating' => 4,
+        ]);
+
+        Review::factory()->create([
+            'book_id' => $book->id,
+            'rating' => 5,
+        ]);
+
+        $response = $this->getJson(
+            route('api.v1.books.show', $book)
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'data.average_rating',
+                4.3
+            );
+    }
+
+    /**
+     * レビューが存在しない場合の平均評価はnullで返す
+     */
+    public function test_average_rating_is_null_when_book_has_no_reviews(): void
+    {
+        $book = Book::factory()->create();
+
+        $response = $this->getJson(
+            route('api.v1.books.show', $book)
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath(
+                'data.average_rating',
+                null
+            );
+    }
+
+    /**
      * 書籍詳細にレビュー件数をreview_countで含める
      */
     public function test_book_detail_contains_review_count(): void
