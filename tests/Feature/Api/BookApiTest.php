@@ -263,6 +263,37 @@ class BookApiTest extends TestCase
     }
 
     /**
+     * 存在しないページ番号を指定した場合は
+     * 200と空のdataを返す
+     */
+    public function test_out_of_range_page_returns_empty_data(): void
+    {
+        Book::factory()
+            ->count(3)
+            ->create();
+
+        $response = $this->getJson(
+            route('api.v1.books.index', [
+                'per_page' => 2,
+                'page' => 999,
+            ])
+        );
+
+        $response
+            ->assertOk()
+            ->assertJsonCount(0, 'data')
+            ->assertJsonStructure([
+                'data',
+                'links',
+                'meta',
+            ])
+            ->assertJsonPath(
+                'meta.current_page',
+                999
+            );
+    }
+
+    /**
      * 存在しないジャンルIDは指定できない
      */
     public function test_nonexistent_genre_id_returns_validation_error(): void
