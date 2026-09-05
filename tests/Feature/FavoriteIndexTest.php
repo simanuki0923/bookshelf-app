@@ -267,4 +267,47 @@ class FavoriteIndexTest extends TestCase
             '解除対象書籍'
         );
     }
+
+    /**
+     * お気に入り書籍一覧は書籍の最新登録順で表示される
+     */
+    public function test_favorite_books_are_displayed_in_latest_book_order(): void
+    {
+        $user = User::factory()->create();
+
+        $oldBook = Book::factory()->create([
+            'title' => '古いお気に入り書籍',
+            'created_at' => now()->subDay(),
+        ]);
+
+        $newBook = Book::factory()->create([
+            'title' => '新しいお気に入り書籍',
+            'created_at' => now(),
+        ]);
+
+        $user->favoriteBooks()->attach([
+            $oldBook->id,
+            $newBook->id,
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->get(route('favorites.index'));
+
+        $response->assertOk();
+
+        $response->assertViewHas(
+            'books',
+            function ($viewBooks) use ($newBook, $oldBook) {
+                return $viewBooks
+                    ->getCollection()
+                    ->pluck('id')
+                    ->values()
+                    ->all() === [
+                        $newBook->id,
+                        $oldBook->id,
+                    ];
+            }
+        );
+    }
 }
