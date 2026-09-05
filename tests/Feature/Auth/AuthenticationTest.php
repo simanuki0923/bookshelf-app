@@ -87,6 +87,69 @@ class AuthenticationTest extends TestCase
     }
 
     /**
+     * メールアドレス未入力ではログインできない
+     */
+    public function test_users_cannot_login_without_email(): void
+    {
+        $response = $this
+            ->from('/login')
+            ->post('/login', [
+                'email' => '',
+                'password' => 'password',
+            ]);
+
+        $response
+            ->assertRedirect('/login')
+            ->assertSessionHasErrors([
+                'email' => 'メールアドレスを入力してください。',
+            ]);
+
+        $this->assertGuest();
+    }
+
+    /**
+     * メールアドレス形式でない場合はログインできない
+     */
+    public function test_users_cannot_login_with_invalid_email_format(): void
+    {
+        $response = $this
+            ->from('/login')
+            ->post('/login', [
+                'email' => 'invalid-email',
+                'password' => 'password',
+            ]);
+
+        $response
+            ->assertRedirect('/login')
+            ->assertSessionHasErrors([
+                'email' => 'メールアドレスの形式で入力してください。',
+            ]);
+
+        $this->assertGuest();
+    }
+
+    /**
+     * パスワード未入力ではログインできない
+     */
+    public function test_users_cannot_login_without_password(): void
+    {
+        $response = $this
+            ->from('/login')
+            ->post('/login', [
+                'email' => 'test@example.com',
+                'password' => '',
+            ]);
+
+        $response
+            ->assertRedirect('/login')
+            ->assertSessionHasErrors([
+                'password' => 'パスワードを入力してください。',
+            ]);
+
+        $this->assertGuest();
+    }
+
+    /**
      * 正しい情報でログインできる
      */
     public function test_users_can_authenticate(): void
