@@ -6,6 +6,7 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Actions\Fortify\UpdateUserPassword;
 use App\Actions\Fortify\UpdateUserProfileInformation;
+use App\Http\Requests\Auth\LoginRequest as AppLoginRequest;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -13,6 +14,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\LogoutResponse as LogoutResponseContract;
 use Laravel\Fortify\Fortify;
+use Laravel\Fortify\Http\Requests\LoginRequest as FortifyLoginRequest;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -21,6 +23,12 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Fortify標準のログインRequestをアプリ側Requestへ差し替え
+        $this->app->bind(
+            FortifyLoginRequest::class,
+            AppLoginRequest::class
+        );
+
         // ログアウト後はログイン画面へ遷移
         $this->app->instance(
             LogoutResponseContract::class,
