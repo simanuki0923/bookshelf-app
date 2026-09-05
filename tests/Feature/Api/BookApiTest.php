@@ -342,6 +342,101 @@ class BookApiTest extends TestCase
     }
 
     /**
+     * keywordは文字列でなければならない
+     */
+    public function test_keyword_must_be_string(): void
+    {
+        $response = $this->getJson(
+            route('api.v1.books.index', [
+                'keyword' => [
+                    'Laravel',
+                ],
+            ])
+        );
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'keyword',
+            ]);
+    }
+
+    /**
+     * keywordは255文字以下でなければならない
+     */
+    public function test_keyword_cannot_exceed_255_characters(): void
+    {
+        $response = $this->getJson(
+            route('api.v1.books.index', [
+                'keyword' => str_repeat(
+                    'a',
+                    256
+                ),
+            ])
+        );
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'keyword',
+            ]);
+    }
+
+    /**
+     * genre_idは整数でなければならない
+     */
+    public function test_genre_id_must_be_integer(): void
+    {
+        $response = $this->getJson(
+            route('api.v1.books.index', [
+                'genre_id' => 'invalid',
+            ])
+        );
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'genre_id',
+            ]);
+    }
+
+    /**
+     * pageは整数でなければならない
+     */
+    public function test_page_must_be_integer(): void
+    {
+        $response = $this->getJson(
+            route('api.v1.books.index', [
+                'page' => 'invalid',
+            ])
+        );
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'page',
+            ]);
+    }
+
+    /**
+     * per_pageは整数でなければならない
+     */
+    public function test_per_page_must_be_integer(): void
+    {
+        $response = $this->getJson(
+            route('api.v1.books.index', [
+                'per_page' => 'invalid',
+            ])
+        );
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'per_page',
+            ]);
+    }
+
+    /**
      * 書籍一覧にジャンル・平均評価・レビュー件数を含める
      */
     public function test_book_index_contains_genres_average_rating_and_review_count(): void
