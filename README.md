@@ -79,6 +79,10 @@ Web画面とは別に、書籍情報を操作するPublic APIも実装してい�
 | Laravel Fortify | 認証処理 |
 | Laravel Sanctum | Personal Access Token |
 | Blade | Web画面 |
+| Vite | フロントエンドビルド |
+| Tailwind CSS | 3.4.19 |
+| Alpine.js | 3.15.12 |
+| @tailwindcss/forms | 0.5.11 |
 | Eloquent ORM | DBアクセス・リレーション |
 | FormRequest | バリデーション |
 | Policy | 認可 |
@@ -92,7 +96,9 @@ Web画面とは別に、書籍情報を操作するPublic APIも実装してい�
 
 ## 4. 開発環境
 
-Laravel Sailを利用し、Docker上にPHP・MySQL・Laravelアプリケーションの実行環境を構築しています。
+本プロジェクトは、要件シートで指定された初期環境構築手順に基づき、PHP 8.2 / Laravel 10.x / Laravel Sail / MySQL 8.4 の構成で開発しています。
+
+`resources/` 配下についても、指定されたBasic版テンプレートをベースとして実装しています。
 
 ```text
 Windows 11
@@ -102,6 +108,46 @@ Windows 11
             ├─ MySQL 8.4
             └─ phpMyAdmin
 ```
+
+### 初期環境構築について
+
+本プロジェクトの開発開始時には、要件シートで指定された手順に従って環境を構築しています。
+
+初期構築の流れは以下です。
+
+```text
+Laravel 10.x プロジェクト作成
+        ↓
+Laravel Sail導入
+        ↓
+MySQL環境構築
+        ↓
+Vite / Tailwind CSS / Alpine.js導入
+        ↓
+Basic版resourcesの反映
+        ↓
+phpMyAdmin追加
+        ↓
+APP_KEY生成
+        ↓
+Migration / Seeder
+        ↓
+日本語化
+```
+
+`resources/` 配下の初期テンプレートについては、
+
+```text
+coachtech-prepared-blade-list/Preparedblade-mockcase-BookShelf
+```
+
+のBasicブランチをベースとして使用しています。
+
+### READMEに記載する環境構築手順について
+
+本READMEの環境構築手順は、要件シートに記載されている**初期プロジェクト作成手順を置き換えるものではありません**。
+
+以下では、指定された環境で開発済みの本GitHubリポジトリをCloneし、同一構成で動作確認するための再構築手順を記載しています。
 
 ### Laravel Sail / Dockerを採用した理由
 
@@ -119,6 +165,21 @@ Laravel SailとDockerを利用することで、以下を目的としていま�
 
 ## 5. 環境構築
 
+以下は、完成済みの本リポジトリをGitHubからCloneして動作確認するための手順です。
+
+### 前提環境
+
+以下が利用可能な環境を前提とします。
+
+```text
+Windows 11
+WSL2 Ubuntu
+Docker Desktop
+Git
+```
+
+PHPやMySQLをホストOSへ直接インストールするのではなく、Laravel Sail / Docker上で実行します。
+
 ### 1. リポジトリをClone
 
 ```bash
@@ -126,11 +187,36 @@ git clone https://github.com/simanuki0923/bookshelf-app.git
 cd bookshelf-app
 ```
 
-### 2. Composerパッケージをインストール
+本リポジトリは既にLaravelプロジェクトとして作成済みのため、Clone後に `composer create-project` を再実行する必要はありません。
+
+---
+
+### 2. Composer依存パッケージを復元
+
+PHP 8.2用のLaravel Sail Composerコンテナを利用して、`composer.lock` に記録された依存パッケージを復元します。
 
 ```bash
+docker run --rm \
+-u "$(id -u):$(id -g)" \
+-v "$(pwd):/var/www/html" \
+-w /var/www/html \
+-e COMPOSER_CACHE_DIR=/tmp/composer_cache \
+laravelsail/php82-composer:latest \
 composer install
 ```
+
+この処理によってLaravel Sail、Fortify、Sanctum等のComposer依存パッケージが復元されます。
+
+Clone後に以下を個別に再インストールする必要はありません。
+
+```text
+Laravel
+Laravel Sail
+Laravel Fortify
+Laravel Sanctum
+```
+
+---
 
 ### 3. 環境変数ファイルを作成
 
@@ -138,18 +224,20 @@ composer install
 cp .env.example .env
 ```
 
-`.env` のDatabase設定を環境に合わせて設定します。
-
-例：
+Database設定は以下を使用します。
 
 ```env
 DB_CONNECTION=mysql
 DB_HOST=mysql
 DB_PORT=3306
-DB_DATABASE=<DATABASE_NAME>
-DB_USERNAME=<DATABASE_USER>
-DB_PASSWORD=<DATABASE_PASSWORD>
+DB_DATABASE=laravel
+DB_USERNAME=sail
+DB_PASSWORD=password
 ```
+
+Laravel Sailでは `DB_HOST` に `localhost` や `127.0.0.1` ではなく、Dockerサービス名の `mysql` を指定します。
+
+---
 
 ### 4. Laravel Sailを起動
 
@@ -157,46 +245,140 @@ DB_PASSWORD=<DATABASE_PASSWORD>
 ./vendor/bin/sail up -d
 ```
 
-`sail` をalias登録している場合は、以下でも実行できます。
+起動状態を確認します。
 
 ```bash
-sail up -d
+./vendor/bin/sail ps
 ```
 
-### 5. APP_KEYを生成
+---
+
+### 5. sailエイリアスを設定
+
+以降の操作を `sail` コマンドで実行する場合は、WSL2 UbuntuのBash環境で以下を設定します。
+
+```bash
+echo "alias sail='[ -f sail ] && bash sail || bash vendor/bin/sail'" >> ~/.bashrc
+source ~/.bashrc
+```
+
+確認：
+
+```bash
+sail --version
+```
+
+エイリアスを使用しない場合は、各コマンドの `sail` を `./vendor/bin/sail` に置き換えて実行できます。
+
+---
+
+### 6. APP_KEYを生成
 
 ```bash
 sail artisan key:generate
 ```
 
-### 6. Migrationを実行
+---
+
+### 7. npm依存パッケージを復元
 
 ```bash
-sail artisan migrate
+sail npm install
 ```
 
-### 7. Seederを実行
+本リポジトリには `package.json` / `package-lock.json` およびTailwind CSS / Vite等の設定ファイルが含まれているため、Clone後に以下を個別に再実行する必要はありません。
+
+```text
+npm install alpinejs
+npm install tailwindcss
+npm install @tailwindcss/forms
+tailwindcss init
+```
+
+`npm install` によって、既に定義済みの依存関係が復元されます。
+
+---
+
+### 8. resourcesについて
+
+本リポジトリの `resources/` には、指定されたBasic版テンプレートをベースとして開発・修正したファイルが含まれています。
+
+そのため、Clone後にBasic版の `resources/` へ再度差し替える必要はありません。
+
+再度差し替えると、本アプリケーションで実装・修正したBlade、CSS、JavaScript等が上書きされる可能性があります。
+
+---
+
+### 9. Databaseを構築
+
+MigrationとSeederを実行します。
 
 ```bash
-sail artisan db:seed
+sail artisan migrate --seed
 ```
 
-Databaseを初期化してSeederまで実行する場合は以下を使用します。
+Databaseを完全に初期化して再構築する場合は以下を使用します。
 
 ```bash
 sail artisan migrate:fresh --seed
 ```
 
-### アプリケーション
+---
+
+### 10. 日本語化
+
+本プロジェクトではLaravelのlocaleを日本語へ設定しています。
+
+```php
+'locale' => 'ja',
+```
+
+認証・バリデーション等の日本語メッセージは以下へ配置しています。
+
+```text
+lang/ja/auth.php
+lang/ja/pagination.php
+lang/ja/passwords.php
+lang/ja/validation.php
+```
+
+本プロジェクトでは `laravel-lang/*` 系パッケージを使用せず、プロジェクト内へ日本語メッセージファイルを手動配置しています。
+
+---
+
+### 11. Vite開発サーバーを起動
+
+```bash
+sail npm run dev
+```
+
+開発中はこのコマンドを起動した状態にします。
+
+---
+
+### 12. アプリケーションへアクセス
+
+Laravel：
 
 ```text
 http://localhost
 ```
 
-### phpMyAdmin
+phpMyAdmin：
 
 ```text
 http://localhost:8080
+```
+
+---
+
+### 13. 環境確認
+
+```bash
+sail php -v
+sail artisan --version
+sail composer check-platform-reqs
+sail artisan migrate:status
 ```
 
 ---
@@ -499,8 +681,8 @@ Laravel SanctumがPersonal Access Tokenを管理するための標準テーブ�
 | abilities | text | NULL許可 |
 | last_used_at | timestamp | NULL許可 |
 | expires_at | timestamp | NULL許可 |
-| created_at | timestamp | Laravel timestamps |
-| updated_at | timestamp | Laravel timestamps |
+| created_at | timestamp | NULL許可 / Laravel timestamps |
+| updated_at | timestamp | NULL許可 / Laravel timestamps |
 
 `tokenable_type` と `tokenable_id` によるポリモーフィック関連を利用しています。
 
@@ -688,8 +870,6 @@ Validation Errorのメッセージは日本語で表示します。
 
 ### 書籍
 
-主なValidationは以下です。
-
 ```text
 title
 required / string / max:255
@@ -754,17 +934,6 @@ nullable / integer / min:1 / max:100
 
 ### FormRequestを採用した理由
 
-Controller内へValidationを直接記述すると、
-
-```text
-認可
-Validation
-DB更新
-画面遷移
-```
-
-など複数の責務がControllerへ集中します。
-
 ValidationをFormRequestへ分離することで、Controllerを処理の組み立てとレスポンス制御へ集中させています。
 
 ---
@@ -786,8 +955,6 @@ ValidationをFormRequestへ分離することで、Controllerを処理の組み�
 ```
 
 書籍一覧は新しい書籍から表示し、10件単位でPaginationしています。
-
----
 
 ### レビュー機能
 
@@ -812,14 +979,6 @@ user_id + book_id
 
 また、書籍登録者本人が自分で登録した書籍へレビューを投稿することも可能です。
 
-#### この設計を採用した理由
-
-レビューを「ユーザーと書籍の関係を1件だけ保存するデータ」ではなく、「ある時点でユーザーが投稿した評価データ」として扱っています。
-
-そのため、同じ書籍を再読した際などにも新しいレビューを投稿できます。
-
----
-
 ### お気に入り機能
 
 ユーザーと書籍は多対多関係になるため、`favorites` 中間テーブルを利用しています。
@@ -829,8 +988,6 @@ user_id + book_id
 ユーザーは、自分自身が登録した書籍もお気に入り登録できます。
 
 お気に入り一覧はBookの `created_at` の降順で表示します。
-
----
 
 ### レビューいいね機能
 
@@ -856,21 +1013,7 @@ Review
 いいね解除
 ```
 
-同一エンドポイントで登録と解除を切り替えられる構造です。
-
-#### 自分のレビューへのいいね
-
 レビュー投稿者本人も自分のレビューへいいねできます。
-
-レビュー投稿者とレビューへいいねするユーザーを別の役割として扱っているため、
-
-```text
-review.user_id === login user
-```
-
-による制限を設けていません。
-
----
 
 ### ジャンル機能
 
@@ -884,16 +1027,6 @@ book_genre
 Genre
 ```
 
-これにより、
-
-```text
-1冊の書籍 → 複数ジャンル
-
-1ジャンル → 複数書籍
-```
-
-を表現しています。
-
 書籍から利用されているGenreは削除できないよう制御しています。
 
 利用中のGenreを削除しようとした場合は、
@@ -906,24 +1039,20 @@ Genre
 
 ジャンル一覧はジャンル名順、ジャンル別書籍一覧はBookの `created_at` の降順で表示します。
 
----
-
 ### ランキング機能
 
 レビュー平均評価が高い書籍から順番に最大10件表示します。
 
 レビューが存在しない書籍はランキング対象外です。
 
-ランキングの主な並び順はレビュー平均評価の降順です。
-
-平均評価やレビュー件数にはEloquentの以下の集計機能を利用しています。
+平均評価やレビュー件数には、
 
 ```text
 withAvg()
 withCount()
 ```
 
-PHP側ですべてのReviewを取得して計算するのではなく、Database側で集計することで不要なデータ取得を減らしています。
+を利用しています。
 
 ---
 
@@ -948,23 +1077,7 @@ Review
 └─ ReviewLikes → 削除
 ```
 
-### cascadeOnDeleteを採用した理由
-
-例えば書籍削除後にその書籍を参照するReviewが残ると、存在しない書籍IDを参照する孤立データになります。
-
-書籍に依存して存在するデータには `cascadeOnDelete()` を設定し、親データ削除時に関連データも削除されるようにしています。
-
-### Genreを削除しない理由
-
-Genreは特定の書籍専用のデータではなく、複数の書籍から共有されるマスタデータです。
-
-そのためBook削除時にはGenre本体を削除せず、`book_genre` の関連だけを削除します。
-
-また、利用中Genreの誤削除を防ぐため、`book_genre.genre_id` 側には削除制限を設定しています。
-
 ### 中間テーブルの複合主キー
-
-以下の中間テーブルでは、2つの外部キーを複合主キーとしています。
 
 ```text
 book_genre
@@ -977,7 +1090,7 @@ review_likes
   user_id + review_id
 ```
 
-Application側の処理だけに依存せず、Database側でも同一組み合わせの重複登録を防止しています。
+Application側だけでなく、Database側でも同一組み合わせの重複登録を防止しています。
 
 ---
 
@@ -985,11 +1098,7 @@ Application側の処理だけに依存せず、Database側でも同一組み合�
 
 ### N+1問題への対応
 
-関連データを表示する処理ではEager Loadingを利用しています。
-
-BookごとにGenreやReviewを個別取得すると、Book件数に応じてSQL発行回数が増加するN+1問題が発生します。
-
-そのため、以下を利用しています。
+以下を利用しています。
 
 ```text
 with()
@@ -1008,7 +1117,7 @@ withCount()
 - お気に入り一覧
 - ジャンル別書籍一覧
 
-Public APIの書籍一覧は、
+Public APIは、
 
 ```text
 default per_page = 20
@@ -1017,15 +1126,11 @@ max per_page = 100
 
 としています。
 
-全件を一度に取得せず表示件数を制限することで、データ量増加時のDB取得量・メモリ使用量・HTML描画量の増加を抑えることを目的としています。
-
 ---
 
 ## 15. Public API
 
-Web画面とは別にBook情報を扱うPublic APIを実装しています。
-
-Basic版のAPIは認証不要です。
+Basic版のPublic APIは認証不要です。
 
 ### エンドポイント
 
@@ -1041,16 +1146,16 @@ Basic版のAPIは認証不要です。
 
 | パラメータ | 内容 |
 | --- | --- |
-| keyword | title / author 部分一致検索 |
-| genre_id | Genre IDによる絞り込み |
+| keyword | title / author 部分一致 |
+| genre_id | Genre ID |
 | page | ページ番号 |
-| per_page | 1ページあたりの件数 |
+| per_page | 1ページの件数 |
 
 `per_page` の標準値は20、最大100です。
 
-書籍一覧は `created_at DESC` の最新順で取得します。
+一覧は `created_at DESC` の最新順です。
 
-範囲外のページ番号を指定した場合もLaravel標準Paginationの形式で、
+範囲外ページは、
 
 ```text
 HTTP 200
@@ -1063,42 +1168,11 @@ meta: ...
 
 ### 書籍登録時のuser_id
 
-Public APIはBasic版では認証を使用しないため、書籍登録時の登録ユーザーはRequestから受け取る `user_id` によって指定します。
-
-### API Controllerを分離した理由
-
-Web用ControllerとAPI用Controllerでは返却する内容が異なります。
-
-```text
-Web
-→ Blade View
-
-API
-→ JSON
-```
-
-そのため、API Controllerを以下へ分離しています。
-
-```text
-App\Http\Controllers\Api\V1
-```
-
-### V1名前空間を採用した理由
-
-将来的にAPI仕様変更が発生した場合でも、
-
-```text
-/api/v1/
-/api/v2/
-```
-
-のようにVersionを分離できる構成にするためです。
+Public APIは認証不要のため、書籍登録者はRequestから受け取る `user_id` によって指定します。
 
 ---
 
 ## 16. API Resource
-
-APIレスポンスにはLaravel API Resourceを使用しています。
 
 ```text
 BookResource
@@ -1107,7 +1181,7 @@ ReviewResource
 
 ### BookResource
 
-基本レスポンスでは以下を返します。
+基本レスポンス：
 
 ```text
 id
@@ -1122,9 +1196,15 @@ average_rating
 review_count
 ```
 
-`user_id`、`created_at`、`updated_at` はPublic APIのBookResourceには含めません。
+以下は含めません。
 
-書籍詳細では、上記に加えて `reviews` を返します。
+```text
+user_id
+created_at
+updated_at
+```
+
+書籍詳細では `reviews` を追加します。
 
 レビューが存在しない場合、
 
@@ -1134,13 +1214,11 @@ review_count
 }
 ```
 
-のように `average_rating` は `null` を返します。
+となります。
 
 平均評価が存在する場合は小数第1位まで返します。
 
 ### ReviewResource
-
-書籍詳細のレビューには主に以下を返します。
 
 ```text
 id
@@ -1150,24 +1228,9 @@ comment
 created_at
 ```
 
-### API Resourceを採用した理由
-
-Eloquent ModelをそのままJSONとして返すと、Database内部構造とAPI仕様が強く結合します。
-
-API Resourceを利用することで、
-
-- APIとして公開する項目を明確にする
-- Model変更によるAPIへの影響を減らす
-- JSON構造を統一する
-- APIレスポンス生成をControllerから分離する
-
-ことを目的としています。
-
 ---
 
 ## 17. APIレスポンス
-
-主なHTTP Statusは以下です。
 
 ```text
 GET     200 OK
@@ -1176,9 +1239,7 @@ PUT     200 OK
 DELETE  204 No Content
 ```
 
-存在しないBookの場合は404を返します。
-
-APIの404レスポンスは以下の形式です。
+存在しないBook：
 
 ```json
 {
@@ -1186,7 +1247,7 @@ APIの404レスポンスは以下の形式です。
 }
 ```
 
-Validation Errorの場合はLaravel標準形式で422を返します。
+Validation Error：
 
 ```json
 {
@@ -1202,8 +1263,6 @@ Validation Errorの場合はLaravel標準形式で422を返します。
 ---
 
 ## 18. Controllerの責務
-
-本アプリケーションでは以下のように責務を分離しています。
 
 ```text
 Controller
@@ -1222,29 +1281,13 @@ API Resource
 → API Response
 ```
 
-Controllerへ処理を集中させず、それぞれの役割をLaravelの標準機能へ分離することで保守しやすい構成を目指しています。
+Laravelの標準機能へ責務を分離し、Controllerを簡潔に保つことを意識しています。
 
 ---
 
 ## 19. テスト方針
 
-本アプリケーションでは、Feature TestとModelのUnit Testを実装しています。
-
-Feature Testでは、単純な正常系だけでなく以下を確認しています。
-
-- Authentication
-- Authorization
-- Validation
-- Database
-- Relation
-- Cascade Delete
-- 404
-- Guest Access
-- API
-- Pagination
-- Sort Order
-
-Unit Testでは、ModelのリレーションやCastを確認しています。
+Feature TestとModel Unit Testを実装しています。
 
 ### Unit Test
 
@@ -1253,32 +1296,6 @@ Tests/Unit/Models/UserTest
 Tests/Unit/Models/BookTest
 Tests/Unit/Models/GenreTest
 Tests/Unit/Models/ReviewTest
-```
-
-主に以下を確認しています。
-
-```text
-User
-├─ books relation
-├─ reviews relation
-├─ favoriteBooks relation
-└─ likedReviews relation
-
-Book
-├─ user relation
-├─ genres relation
-├─ reviews relation
-├─ favoritedByUsers relation
-└─ published_date cast
-
-Genre
-└─ books relation
-
-Review
-├─ user relation
-├─ book relation
-├─ likedByUsers relation
-└─ rating cast
 ```
 
 ### 主なFeature Test
@@ -1312,62 +1329,31 @@ RankingTest
 Api/BookApiTest
 ```
 
-### 仕様をFeature Testとして固定
-
-重要な仕様はFeature Testとして残しています。
-
-#### 同一ユーザーが同一書籍へ複数レビューできる
+### 主な固定仕様
 
 ```text
 same user can create multiple reviews for same book
-```
 
-#### 自分自身のレビューへいいねできる
-
-```text
 user can like own review
-```
 
-#### 自分自身の書籍をお気に入り登録できる
-
-```text
 user can favorite own book
-```
 
-#### 自分自身の書籍へレビューできる
-
-```text
 user can review own book
-```
 
-#### Book削除時の関連データ
-
-```text
 reviews are deleted with book
+
 favorites are deleted with book
+
 book genre relationships are deleted with book
+
 genres are not deleted with book
-```
 
-#### お気に入り一覧の表示順
-
-```text
 favorite books are displayed in latest book order
-```
 
-#### ジャンル別書籍一覧の表示順
-
-```text
 genre books are displayed in latest book order
-```
 
-#### API範囲外ページ
-
-```text
 out of range page returns empty data
 ```
-
-仕様をテストとして固定することで、将来実装を変更した際にも既存仕様が壊れていないことを確認できます。
 
 ### 現在のテスト結果
 
@@ -1377,19 +1363,19 @@ Assertions: 725
 Coverage:   92.5%
 ```
 
-### テスト実行
+### Test実行
 
 ```bash
 sail artisan test
 ```
 
-### Unit Testのみ実行
+### Unit Test
 
 ```bash
 sail artisan test tests/Unit
 ```
 
-### Coverage確認
+### Coverage
 
 ```bash
 sail artisan test --coverage
@@ -1399,15 +1385,19 @@ sail artisan test --coverage
 
 ## 20. コード品質
 
-Laravel Pintを利用してLaravelのコーディングスタイルへ統一しています。
+Laravel Pintを使用しています。
 
-### コードスタイル確認
+### 確認
 
 ```bash
 sail bin pint --test
 ```
 
-現在のコードスタイルチェックでは、122 filesがPASSしています。
+現在：
+
+```text
+122 files PASS
+```
 
 ### 自動修正
 
@@ -1415,23 +1405,11 @@ sail bin pint --test
 sail bin pint
 ```
 
-### Pintを採用した理由
-
-コードスタイルを自動で統一することで、
-
-- import順
-- インデント
-- 空行
-- 波括弧位置
-- コーディング規約
-
-などの差異を減らし、コードレビュー時にロジックへ集中しやすくすることを目的としています。
-
 ---
 
 ## 21. Migration設計
 
-Migrationの状態は以下で確認できます。
+確認：
 
 ```bash
 sail artisan migrate:status
@@ -1439,15 +1417,13 @@ sail artisan migrate:status
 
 ### Review commentの必須化
 
-レビューコメントについては、初期Migration作成後に必須仕様が確定したため、後続Migrationで `NOT NULL` へ変更しています。
-
 ```text
 make_comment_required_on_reviews_table
 ```
 
-### DR08標準テーブル
+後続Migrationによって `comment` をNOT NULLへ変更しています。
 
-DR08では以下のLaravel標準テーブルを基本要件として保持します。
+### DR08標準テーブル
 
 ```text
 password_reset_tokens
@@ -1455,11 +1431,9 @@ personal_access_tokens
 failed_jobs
 ```
 
-これらはLaravel標準Migrationで作成されるテーブルを使用しています。
+はLaravel標準Migrationの構成を保持しています。
 
 ### usersの2FA関連カラム
-
-Laravel Fortifyの標準Migrationではusersテーブルへ、
 
 ```text
 two_factor_secret
@@ -1467,31 +1441,17 @@ two_factor_recovery_codes
 two_factor_confirmed_at
 ```
 
-が追加されます。
-
-本アプリケーションでは2要素認証機能を使用しないため、
+はBasic版では使用しないため、
 
 ```text
 remove_unused_two_factor_columns_from_users_table
 ```
 
-の後続Migrationで上記3カラムのみ削除します。
+によって削除しています。
 
-DR08のLaravel標準補助テーブルとは責務を分離し、標準テーブルについては削除していません。
+DR08の標準補助テーブルは削除していません。
 
-### 後続Migrationを採用した理由
-
-既に適用済みのMigrationを書き換えるだけでは、Migration済みDatabaseへ変更が反映されません。
-
-Schema変更を新しいMigrationとして追加することで、
-
-- DB変更履歴を残す
-- 既存環境にも変更を適用する
-- 変更内容をGit上で追跡する
-
-ことができます。
-
-また、
+### migrate:fresh時
 
 ```bash
 sail artisan migrate:fresh --seed
@@ -1505,7 +1465,7 @@ personal_access_tokens
 failed_jobs
 ```
 
-が作成され、使用しない2FA関連カラムのみが最終的に削除される構成としています。
+が作成され、不要な2FA関連カラムのみ最終的に削除されます。
 
 ---
 
@@ -1524,10 +1484,8 @@ GET /ranking
 ```text
 GET  /register
 POST /register
-
 GET  /login
 POST /login
-
 POST /logout
 ```
 
@@ -1590,19 +1548,19 @@ DELETE /api/v1/books/{book}
 
 ## 23. 開発時の確認コマンド
 
-### PHPバージョン
+### PHP
 
 ```bash
 sail php -v
 ```
 
-### Laravelバージョン
+### Laravel
 
 ```bash
 sail artisan --version
 ```
 
-### Composer依存関係
+### Composer
 
 ```bash
 sail composer check-platform-reqs
@@ -1669,8 +1627,6 @@ API Resource
 
 ### DBで保証できるものはDBでも保証する
 
-以下はApplication側だけでなく、Database制約でも重複を防止しています。
-
 ```text
 ISBN
 → UNIQUE
@@ -1685,11 +1641,11 @@ ISBN
 → book_id + genre_id
 ```
 
-### 関連データの整合性を保証する
+### 関連データの整合性
 
-外部キー制約とCascade / Restrictを利用し、削除後に不整合データが残らない構造にしています。
+外部キー制約とCascade / Restrictを利用しています。
 
-### パフォーマンスを意識する
+### パフォーマンス
 
 ```text
 Eager Loading
@@ -1697,13 +1653,13 @@ Pagination
 DB集計
 ```
 
-を利用し、データ量増加時にも無駄な取得処理を増やさないよう意識しています。
+を利用しています。
 
 ### 仕様をテストとして残す
 
-重要な仕様をFeature Testとして実装することで、将来コード変更を行った場合でも既存機能が壊れていないことを自動で確認できる構成としています。
+重要な仕様をFeature Testとして固定しています。
 
-また、ModelのリレーションやCastについてはUnit Testとして固定し、Model設計の変更による影響を検出できるようにしています。
+ModelのリレーションやCastについてはUnit Testとして固定しています。
 
 ---
 
